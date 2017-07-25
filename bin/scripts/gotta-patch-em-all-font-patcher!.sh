@@ -157,13 +157,13 @@ function generate_info {
   # generate the readmes:
 
   # if first time with this font then re-build parent dir readme, else skip:
-  if [[ $config_parent_dir != "$last_parent_dir"  && (! $is_unpatched_fonts_root) ]];
+  if [[ $config_parent_dir != "$last_parent_dir" ]] && [ $is_unpatched_fonts_root == "0" ];
   then
     echo "$LINE_PREFIX Re-generate parent directory readme"
-    generate_readme "$patched_font_dir/.."
+    generate_readme "$patched_font_dir.." 0
   fi
 
-  generate_readme "$patched_font_dir"
+  generate_readme "$patched_font_dir" 1
 
   last_parent_dir=$config_parent_dir
 
@@ -175,9 +175,10 @@ function generate_info {
 # Re-generate all the readmes
 # $1 = fontdir path
 function generate_readme {
-  patched_font_dir=$1
-  combinations_filename="$patched_font_dir/readme.md"
-  font_info="$patched_font_dir/font-info.md"
+  local patched_font_dir=$1
+  local generate_combinations=$2
+  local combinations_filename="$patched_font_dir/readme.md"
+  local font_info="$patched_font_dir/font-info.md"
 
   # clear output file (needed for multiple runs or updates):
   > "$combinations_filename"
@@ -192,15 +193,19 @@ function generate_readme {
 
   cat "$parent_dir/src/readme-per-directory-variations.md" >> "$combinations_filename"
 
-  # add to the file
-  {
-    printf "\`\`\`sh"
-    printf "\n# %s Possible Combinations:\n" "$combination_count"
-    printf "\n"
-    printf "%s" "$combinations"
-    printf "\n"
-    printf "\`\`\`"
-  } >> "$combinations_filename"
+  if [ "$generate_combinations" == 1 ];
+  then
+    echo "$LINE_PREFIX Adding 'Possible Combinations' section"
+    # add to the file
+    {
+      printf "\`\`\`sh"
+      printf "\n# %s Possible Combinations:\n" "$combination_count"
+      printf "\n"
+      printf "%s" "$combinations"
+      printf "\n"
+      printf "\`\`\`"
+    } >> "$combinations_filename"
+  fi
 }
 
 if [ ! $info_only ]
@@ -233,6 +238,7 @@ fi
 # Iterate through source fonts
 for i in "${!source_fonts[@]}"
 do
+  echo "Generating info for ${source_fonts[$i]}"
   generate_info "${source_fonts[$i]}" "$i" 2>/dev/null
 done
 
